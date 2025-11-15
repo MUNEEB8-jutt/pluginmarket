@@ -40,7 +40,8 @@ def token_required(f):
         try:
             token = token.replace('Bearer ', '')
             data = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-            current_user = users_collection.find_one({'_id': data['user_id']})
+            # Try both _id and username for compatibility
+            current_user = users_collection.find_one({'$or': [{'_id': data['user_id']}, {'username': data['user_id']}]})
             if not current_user:
                 return jsonify({'error': 'User not found'}), 401
         except:
