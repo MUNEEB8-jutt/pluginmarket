@@ -1,6 +1,18 @@
 import React from 'react';
 
-function MinecraftBackground({ videoSrc = '/video.mp4' }) {
+// HD Minecraft Background Images from Unsplash/Pexels
+const backgroundImages = {
+  home: 'https://images.unsplash.com/photo-1625805866449-3589fe3f71a3?w=1920&q=80', // Minecraft landscape
+  profile: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1920&q=80', // Minecraft village
+  admin: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1920&q=80', // Minecraft blocks
+  deposit: 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=1920&q=80', // Minecraft creative
+  default: 'https://images.unsplash.com/photo-1614732414444-096e5f1122d5?w=1920&q=80' // Minecraft world
+};
+
+function MinecraftBackground({ imageSrc = 'default' }) {
+  // Get image URL based on page
+  const imageUrl = backgroundImages[imageSrc] || backgroundImages.default;
+
   return (
     <div
       style={{
@@ -13,32 +25,7 @@ function MinecraftBackground({ videoSrc = '/video.mp4' }) {
         overflow: 'hidden',
       }}
     >
-      {/* Local Minecraft Video Background - Optimized */}
-      <video
-        key={videoSrc}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          minWidth: '100%',
-          minHeight: '100%',
-          width: 'auto',
-          height: 'auto',
-          transform: 'translate(-50%, -50%)',
-          objectFit: 'cover',
-          pointerEvents: 'none',
-        }}
-      >
-        <source src={videoSrc} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-
-      {/* Dark overlay for readability */}
+      {/* HD Minecraft Image Background */}
       <div
         style={{
           position: 'absolute',
@@ -46,8 +33,26 @@ function MinecraftBackground({ videoSrc = '/video.mp4' }) {
           left: 0,
           width: '100%',
           height: '100%',
-          background: 'rgba(0, 0, 0, 0.5)',
+          backgroundImage: `url(${imageUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
           pointerEvents: 'none',
+        }}
+      />
+
+      {/* Animated overlay for depth effect */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.4) 100%)',
+          pointerEvents: 'none',
+          animation: 'fadeIn 1s ease-in',
         }}
       />
     </div>

@@ -44,19 +44,20 @@ function App() {
     navigate('home');
   };
 
-  const getVideoForPage = () => {
+  const getImageForPage = () => {
     switch (currentPage) {
       case 'home':
-        return '/1.mp4';
+        return 'home';
       case 'profile':
+        return 'profile';
       case 'deposit':
-        return '/2.mp4';
+        return 'deposit';
       case 'plugin':
-        return '/3.mp4';
+        return 'default';
       case 'admin':
-        return '/4.mp4';
+        return 'admin';
       default:
-        return '/video.mp4';
+        return 'default';
     }
   };
 
@@ -83,7 +84,7 @@ function App() {
 
   return (
     <div className="App">
-      <MinecraftBackground videoSrc={getVideoForPage()} />
+      <MinecraftBackground imageSrc={getImageForPage()} />
       <SocialButtons />
       {renderPage()}
     </div>
