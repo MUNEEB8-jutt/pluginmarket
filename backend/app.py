@@ -103,9 +103,12 @@ def login():
     try:
         data = request.json
         username = data.get('username')
+        email = data.get('email')
         password = data.get('password')
         
-        user = users_collection.find_one({'username': username})
+        # Support login with either username or email
+        query = {'$or': [{'username': username}, {'email': email}]} if username or email else {}
+        user = users_collection.find_one(query)
         if not user:
             return jsonify({'error': 'User not found'}), 401
         
