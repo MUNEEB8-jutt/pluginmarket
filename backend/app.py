@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pymongo import MongoClient
-import gridfs
 import os
 import jwt
 import bcrypt
@@ -9,6 +8,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from io import BytesIO
 import uuid
+import base64
 
 app = Flask(__name__)
 CORS(app)
@@ -21,9 +21,6 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'mC9pLuG1nV3rS3-s3cR3t-k3Y-2024-pR0dUc
 # MongoDB connection
 client = MongoClient(MONGO_URL)
 db = client[DB_NAME]
-
-# GridFS for file storage
-fs = gridfs.GridFS(db)
 
 # Collections
 users_collection = db['users']
@@ -201,6 +198,8 @@ def add_plugin(current_user):
     if not current_user.get('is_admin'):
         return jsonify({'error': 'Unauthorized'}), 403
     try:
+        import base64
+        
         # Get form data
         name = request.form.get('name')
         description = request.form.get('description')
@@ -209,27 +208,23 @@ def add_plugin(current_user):
         # Generate plugin ID
         plugin_id = str(uuid.uuid4())[:8]
         
-        # Handle logo upload to GridFS
-        logo_file_id = None
+        # Handle logo upload (base64 encode for small files)
+        logo_data = None
+        logo_filename = None
         if 'logo' in request.files:
             logo = request.files['logo']
             if logo.filename:
-                logo_file_id = fs.put(
-                    logo.read(),
-                    filename=f'{plugin_id}_logo_{logo.filename}',
-                    content_type=logo.content_type
-                )
+                logo_data = base64.b64encode(logo.read()).decode('utf-8')
+                logo_filename = logo.filename
         
-        # Handle plugin file upload to GridFS
-        plugin_file_id = None
+        # Handle plugin file upload (base64 encode)
+        plugin_data = None
+        plugin_filename = None
         if 'plugin_file' in request.files:
             plugin_file = request.files['plugin_file']
             if plugin_file.filename:
-                plugin_file_id = fs.put(
-                    plugin_file.read(),
-                    filename=f'{plugin_id}_plugin_{plugin_file.filename}',
-                    content_type=plugin_file.content_type or 'application/java-archive'
-                )
+                plugin_data = base64.b64encode(plugin_file.read()).decode('utf-8')
+                plugin_filename = plugin_file.filename
         
         # Create plugin document
         plugin = {
@@ -237,17 +232,22 @@ def add_plugin(current_user):
             'name': name,
             'description': description,
             'price': price,
-            'logo_file_id': str(logo_file_id) if logo_file_id else None,
-            'plugin_file_id': str(plugin_file_id) if plugin_file_id else None,
-            'logo_url': f'/api/files/{logo_file_id}' if logo_file_id else None,
-            'file_url': f'/api/files/{plugin_file_id}' if plugin_file_id else None,
+            'logo_data': logo_data,
+            'logo_filename': logo_filename,
+            'plugin_data': plugin_data,
+            'plugin_filename': plugin_filename,
+            'logo_url': f'/api/plugin-logo/{plugin_id}' if logo_data else None,
+            'file_url': f'/api/plugin-file/{plugin_id}' if plugin_data else None,
             'downloads': 0,
             'created_at': datetime.utcnow()
         }
         
         plugins_collection.insert_one(plugin)
         
-        return jsonify({'message': 'Plugin added successfully', 'plugin': plugin})
+        # Remove large data from response
+        response_plugin = {k: v for k, v in plugin.items() if k not in ['logo_data', 'plugin_data']}
+        
+        return jsonify({'message': 'Plugin added successfully', 'plugin': response_plugin})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -265,17 +265,21 @@ def delete_plugin(current_user, plugin_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# File download route
-@app.route('/api/files/<file_id>', methods=['GET'])
-def get_file(file_id):
+# Plugin logo route
+@app.route('/api/plugin-logo/<plugin_id>', methods=['GET'])
+def get_plugin_logo(plugin_id):
     try:
-        from bson import ObjectId
-        file_data = fs.get(ObjectId(file_id))
+        import base64
+        plugin = plugins_collection.find_one({'id': plugin_id})
+        if not plugin or not plugin.get('logo_data'):
+            return jsonify({'error': 'Logo not found'}), 404
+        
+        logo_bytes = base64.b64decode(plugin['logo_data'])
         return send_file(
-            BytesIO(file_data.read()),
-            mimetype=file_data.content_type,
+            BytesIO(logo_bytes),
+            mimetype='image/png',
             as_attachment=False,
-            download_name=file_data.filename
+            download_name=plugin.get('logo_filename', 'logo.png')
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 404
@@ -285,18 +289,19 @@ def get_file(file_id):
 @token_required
 def download_plugin(current_user, plugin_id):
     try:
+        import base64
+        
         # Check if user purchased the plugin
         if plugin_id not in current_user.get('purchases', []):
             return jsonify({'error': 'Plugin not purchased'}), 403
         
         # Get plugin
         plugin = plugins_collection.find_one({'id': plugin_id})
-        if not plugin or not plugin.get('plugin_file_id'):
+        if not plugin or not plugin.get('plugin_data'):
             return jsonify({'error': 'Plugin file not found'}), 404
         
-        # Get file from GridFS
-        from bson import ObjectId
-        file_data = fs.get(ObjectId(plugin['plugin_file_id']))
+        # Decode file
+        plugin_bytes = base64.b64decode(plugin['plugin_data'])
         
         # Increment download count
         plugins_collection.update_one(
@@ -305,13 +310,32 @@ def download_plugin(current_user, plugin_id):
         )
         
         return send_file(
-            BytesIO(file_data.read()),
-            mimetype=file_data.content_type,
+            BytesIO(plugin_bytes),
+            mimetype='application/java-archive',
             as_attachment=True,
-            download_name=file_data.filename
+            download_name=plugin.get('plugin_filename', 'plugin.jar')
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Plugin file route (for preview/info)
+@app.route('/api/plugin-file/<plugin_id>', methods=['GET'])
+def get_plugin_file(plugin_id):
+    try:
+        import base64
+        plugin = plugins_collection.find_one({'id': plugin_id})
+        if not plugin or not plugin.get('plugin_data'):
+            return jsonify({'error': 'File not found'}), 404
+        
+        plugin_bytes = base64.b64decode(plugin['plugin_data'])
+        return send_file(
+            BytesIO(plugin_bytes),
+            mimetype='application/java-archive',
+            as_attachment=True,
+            download_name=plugin.get('plugin_filename', 'plugin.jar')
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
 
 # Admin setup route (one-time use)
 @app.route('/api/setup-admin', methods=['POST'])
