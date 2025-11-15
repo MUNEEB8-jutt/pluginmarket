@@ -1,0 +1,311 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Press Start 2P', cursive;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #1c1c1c;
+  color: #fff;
+  image-rendering: pixelated;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Minecraft-style scrollbar */
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border: 2px solid #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border: 2px solid #000;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* Pixel borders */
+.pixel-border {
+  border: 4px solid;
+  border-image: repeating-linear-gradient(
+    90deg,
+    #000 0px, #000 4px,
+    transparent 4px, transparent 8px
+  ) 4;
+  box-shadow: 
+    inset 0 0 0 2px rgba(255,255,255,0.1),
+    0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* Minecraft button */
+.mc-button {
+  background: linear-gradient(180deg, #8b8b8b 0%, #5a5a5a 100%);
+  border: 3px solid #000;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 4px 0 #000;
+  transition: all 0.1s;
+  cursor: pointer;
+}
+
+.mc-button:hover {
+  background: linear-gradient(180deg, #a0a0a0 0%, #6f6f6f 100%);
+  transform: translateY(2px);
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 2px 0 #000;
+}
+
+.mc-button:active {
+  transform: translateY(4px);
+  box-shadow: 
+    inset 2px 2px 0 rgba(0,0,0,0.3),
+    inset -2px -2px 0 rgba(255,255,255,0.1);
+}
+
+/* Creeper green button */
+.mc-button-green {
+  background: linear-gradient(180deg, #4eca4e 0%, #3eba3e 100%);
+}
+
+.mc-button-green:hover {
+  background: linear-gradient(180deg, #5fdf5f 0%, #4dcf4d 100%);
+}
+
+/* Gold button */
+.mc-button-gold {
+  background: linear-gradient(180deg, #ffd700 0%, #daa520 100%);
+  color: #000;
+}
+
+.mc-button-gold:hover {
+  background: linear-gradient(180deg, #ffe44d 0%, #e5b535 100%);
+}
+
+/* Red button */
+.mc-button-red {
+  background: linear-gradient(180deg, #ff5555 0%, #cc0000 100%);
+}
+
+.mc-button-red:hover {
+  background: linear-gradient(180deg, #ff6666 0%, #dd1111 100%);
+}
+
+/* Glow effects */
+.glow-green {
+  box-shadow: 0 0 20px rgba(62, 186, 62, 0.6);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(255, 85, 85, 0.6);
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+
+/* Make page backgrounds semi-transparent to show Minecraft background */
+.min-h-screen {
+  background: rgba(28, 28, 28, 0.75) !important;
+}
+
+/* Adjust card backgrounds for better readability */
+.bg-\[#2a2a2a\] {
+  background: rgba(42, 42, 42, 0.92) !important;
+  backdrop-filter: blur(4px);
+}
+
+.bg-\[#1c1c1c\] {
+  background: rgba(28, 28, 28, 0.92) !important;
+  backdrop-filter: blur(4px);
+}
+
+
+/* Social Buttons - Animated Corners */
+.social-button {
+  position: fixed;
+  top: 80px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 3px solid #000;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 4px 0 #000;
+  font-size: 12px;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+  z-index: 999;
+  transition: all 0.3s ease;
+  animation: slideInTop 0.5s ease-out;
+}
+
+.social-button:hover {
+  transform: translateY(4px) scale(1.05);
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 8px 0 #000;
+  animation: bounceTop 0.6s ease infinite;
+}
+
+.social-button svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* Discord Button - Top Left */
+.discord-button {
+  left: 20px;
+  background: linear-gradient(180deg, #7289da 0%, #5865f2 100%);
+  color: white;
+  animation-delay: 0s;
+}
+
+.discord-button:hover {
+  background: linear-gradient(180deg, #8299ea 0%, #6875ff 100%);
+}
+
+/* YouTube Button - Top Right */
+.youtube-button {
+  right: 20px;
+  background: linear-gradient(180deg, #ff0000 0%, #cc0000 100%);
+  color: white;
+  animation-delay: 0.2s;
+}
+
+.youtube-button:hover {
+  background: linear-gradient(180deg, #ff3333 0%, #dd0000 100%);
+}
+
+/* Animations */
+@keyframes slideInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceTop {
+  0%, 100% {
+    transform: translateY(4px) scale(1.05);
+  }
+  50% {
+    transform: translateY(8px) scale(1.08);
+  }
+}
+
+/* Pulse effect */
+.social-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 3px solid currentColor;
+  opacity: 0;
+  animation: pulse 2s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .social-button {
+    padding: 10px 16px;
+    font-size: 10px;
+    top: 70px;
+  }
+  
+  .discord-button {
+    left: 10px;
+  }
+  
+  .youtube-button {
+    right: 10px;
+  }
+  
+  .social-button span {
+    display: none;
+  }
+  
+  .social-button svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+
+/* Plugin Cards - Compact & Beautiful */
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+.border-3 {
+  border-width: 3px;
+}
+
+.rounded-sm {
+  border-radius: 2px;
+}
+
+/* Better text rendering for small sizes */
+.text-xs {
+  letter-spacing: 0.02em;
+}
+
+
+/* Advertisement Banner */
+.ad-banner {
+  animation: adPulse 3s ease-in-out infinite;
+}
+
+@keyframes adPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.3);
+  }
+}
+
+/* AD Badge Animation */
+@keyframes adBadgePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
