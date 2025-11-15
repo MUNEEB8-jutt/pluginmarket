@@ -11,7 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Configuration
-MONGO_URL = os.environ.get('MONGO_URL', 'mongodb+srv://muneeb:muneeb@cluster0.ylxo7zn.mongodb.net/?appName=Cluster0')
+MONGO_URL = os.environ.get('MONGO_URL', 'mongodb+srv://muneeb:muneeb@pluginverse.awggjn6.mongodb.net/?appName=pluginverse')
 DB_NAME = os.environ.get('DB_NAME', 'pluginverse')
 JWT_SECRET = os.environ.get('JWT_SECRET', 'mC9pLuG1nV3rS3-s3cR3t-k3Y-2024-pR0dUcT10n')
 
