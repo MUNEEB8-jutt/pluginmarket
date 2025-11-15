@@ -107,10 +107,19 @@ def login():
         
         user = users_collection.find_one({'username': username})
         if not user:
-            return jsonify({'error': 'Invalid credentials'}), 401
+            return jsonify({'error': 'User not found'}), 401
         
-        if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-            return jsonify({'error': 'Invalid credentials'}), 401
+        # Check password
+        try:
+            stored_password = user['password']
+            # Handle both string and bytes
+            if isinstance(stored_password, str):
+                stored_password = stored_password.encode('utf-8')
+            
+            if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
+                return jsonify({'error': 'Wrong password'}), 401
+        except Exception as pwd_err:
+            return jsonify({'error': f'Password check failed: {str(pwd_err)}'}), 500
         
         token = jwt.encode({
             'user_id': username,
@@ -128,7 +137,7 @@ def login():
             }
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f'Login error: {str(e)}'}), 500
 
 @app.route('/api/auth/me', methods=['GET'])
 @token_required
