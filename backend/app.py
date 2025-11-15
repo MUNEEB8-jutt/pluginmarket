@@ -1,11 +1,14 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pymongo import MongoClient
+import gridfs
 import os
 import jwt
 import bcrypt
 from datetime import datetime, timedelta
 from functools import wraps
+from io import BytesIO
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +21,9 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'mC9pLuG1nV3rS3-s3cR3t-k3Y-2024-pR0dUc
 # MongoDB connection
 client = MongoClient(MONGO_URL)
 db = client[DB_NAME]
+
+# GridFS for file storage
+fs = gridfs.GridFS(db)
 
 # Collections
 users_collection = db['users']
@@ -200,22 +206,29 @@ def add_plugin(current_user):
         price = int(request.form.get('price', 0))
         
         # Generate plugin ID
-        import uuid
         plugin_id = str(uuid.uuid4())[:8]
         
-        # Handle file uploads (logo and plugin file)
-        logo_url = ''
-        plugin_file_url = ''
-        
+        # Handle logo upload to GridFS
+        logo_file_id = None
         if 'logo' in request.files:
             logo = request.files['logo']
             if logo.filename:
-                logo_url = f'/uploads/{plugin_id}_{logo.filename}'
+                logo_file_id = fs.put(
+                    logo.read(),
+                    filename=f'{plugin_id}_logo_{logo.filename}',
+                    content_type=logo.content_type
+                )
         
+        # Handle plugin file upload to GridFS
+        plugin_file_id = None
         if 'plugin_file' in request.files:
             plugin_file = request.files['plugin_file']
             if plugin_file.filename:
-                plugin_file_url = f'/uploads/{plugin_id}_{plugin_file.filename}'
+                plugin_file_id = fs.put(
+                    plugin_file.read(),
+                    filename=f'{plugin_id}_plugin_{plugin_file.filename}',
+                    content_type=plugin_file.content_type or 'application/java-archive'
+                )
         
         # Create plugin document
         plugin = {
@@ -223,8 +236,10 @@ def add_plugin(current_user):
             'name': name,
             'description': description,
             'price': price,
-            'logo_url': logo_url,
-            'file_url': plugin_file_url,
+            'logo_file_id': str(logo_file_id) if logo_file_id else None,
+            'plugin_file_id': str(plugin_file_id) if plugin_file_id else None,
+            'logo_url': f'/api/files/{logo_file_id}' if logo_file_id else None,
+            'file_url': f'/api/files/{plugin_file_id}' if plugin_file_id else None,
             'downloads': 0,
             'created_at': datetime.utcnow()
         }
@@ -246,6 +261,54 @@ def delete_plugin(current_user, plugin_id):
             return jsonify({'message': 'Plugin deleted successfully'})
         else:
             return jsonify({'error': 'Plugin not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# File download route
+@app.route('/api/files/<file_id>', methods=['GET'])
+def get_file(file_id):
+    try:
+        from bson import ObjectId
+        file_data = fs.get(ObjectId(file_id))
+        return send_file(
+            BytesIO(file_data.read()),
+            mimetype=file_data.content_type,
+            as_attachment=False,
+            download_name=file_data.filename
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+# Plugin download route (for users who purchased)
+@app.route('/api/plugins/<plugin_id>/download', methods=['GET'])
+@token_required
+def download_plugin(current_user, plugin_id):
+    try:
+        # Check if user purchased the plugin
+        if plugin_id not in current_user.get('purchases', []):
+            return jsonify({'error': 'Plugin not purchased'}), 403
+        
+        # Get plugin
+        plugin = plugins_collection.find_one({'id': plugin_id})
+        if not plugin or not plugin.get('plugin_file_id'):
+            return jsonify({'error': 'Plugin file not found'}), 404
+        
+        # Get file from GridFS
+        from bson import ObjectId
+        file_data = fs.get(ObjectId(plugin['plugin_file_id']))
+        
+        # Increment download count
+        plugins_collection.update_one(
+            {'id': plugin_id},
+            {'$inc': {'downloads': 1}}
+        )
+        
+        return send_file(
+            BytesIO(file_data.read()),
+            mimetype=file_data.content_type,
+            as_attachment=True,
+            download_name=file_data.filename
+        )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
