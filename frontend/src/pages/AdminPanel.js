@@ -88,7 +88,7 @@ function AdminPanel({ navigate, user, onLogout }) {
   const handleAddPlugin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
+    setMessage('📤 Uploading plugin files...');
 
     const token = localStorage.getItem('token');
     const formData = new FormData();
@@ -99,21 +99,31 @@ function AdminPanel({ navigate, user, onLogout }) {
     formData.append('plugin_file', pluginForm.file);
 
     try {
+      setMessage('⏳ Uploading to MongoDB...');
+      
       const res = await fetch(`${window.API_BASE}/admin/plugins`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        setMessage('✓ Plugin added successfully');
+        setMessage('✓ Plugin added successfully!');
         setPluginForm({ name: '', description: '', price: '', logo: null, file: null });
-        fetchData();
+        // Reset file inputs
+        document.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+        setTimeout(() => {
+          fetchData();
+          setMessage('');
+        }, 2000);
       } else {
-        setMessage('✗ Failed to add plugin');
+        setMessage(`✗ Failed: ${data.error || 'Unknown error'}`);
       }
     } catch (err) {
-      setMessage('✗ Connection failed');
+      setMessage(`✗ Error: ${err.message || 'Connection failed'}`);
+      console.error('Plugin upload error:', err);
     } finally {
       setLoading(false);
     }
