@@ -177,6 +177,5 @@ def get_all_users(current_user):
         return jsonify({'error': str(e)}), 500
 
 # Vercel serverless handler
-def handler(request):
-    with app.request_context(request.environ):
-        return app.full_dispatch_request()
+if __name__ == '__main__':
+    app.run(debug=True)
