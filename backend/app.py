@@ -188,6 +188,33 @@ def get_all_users(current_user):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Admin setup route (one-time use)
+@app.route('/api/setup-admin', methods=['POST'])
+def setup_admin():
+    try:
+        # Delete all existing users
+        users_collection.delete_many({})
+        
+        # Create admin user
+        admin_password = bcrypt.hashpw('admin@786'.encode('utf-8'), bcrypt.gensalt())
+        
+        admin_user = {
+            '_id': 'admin',
+            'username': 'admin',
+            'email': 'admin@gmail.com',
+            'password': admin_password.decode('utf-8'),
+            'coins': 999999,
+            'purchases': [],
+            'is_admin': True,
+            'created_at': datetime.utcnow()
+        }
+        
+        users_collection.insert_one(admin_user)
+        
+        return jsonify({'message': 'Admin user created successfully', 'email': 'admin@gmail.com', 'password': 'admin@786'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Vercel serverless handler
 if __name__ == '__main__':
     app.run(debug=True)
