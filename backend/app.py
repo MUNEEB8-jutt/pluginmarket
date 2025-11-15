@@ -188,6 +188,67 @@ def get_all_users(current_user):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/admin/plugins', methods=['POST'])
+@token_required
+def add_plugin(current_user):
+    if not current_user.get('is_admin'):
+        return jsonify({'error': 'Unauthorized'}), 403
+    try:
+        # Get form data
+        name = request.form.get('name')
+        description = request.form.get('description')
+        price = int(request.form.get('price', 0))
+        
+        # Generate plugin ID
+        import uuid
+        plugin_id = str(uuid.uuid4())[:8]
+        
+        # Handle file uploads (logo and plugin file)
+        logo_url = ''
+        plugin_file_url = ''
+        
+        if 'logo' in request.files:
+            logo = request.files['logo']
+            if logo.filename:
+                logo_url = f'/uploads/{plugin_id}_{logo.filename}'
+        
+        if 'plugin_file' in request.files:
+            plugin_file = request.files['plugin_file']
+            if plugin_file.filename:
+                plugin_file_url = f'/uploads/{plugin_id}_{plugin_file.filename}'
+        
+        # Create plugin document
+        plugin = {
+            'id': plugin_id,
+            'name': name,
+            'description': description,
+            'price': price,
+            'logo_url': logo_url,
+            'file_url': plugin_file_url,
+            'downloads': 0,
+            'created_at': datetime.utcnow()
+        }
+        
+        plugins_collection.insert_one(plugin)
+        
+        return jsonify({'message': 'Plugin added successfully', 'plugin': plugin})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/plugins/<plugin_id>', methods=['DELETE'])
+@token_required
+def delete_plugin(current_user, plugin_id):
+    if not current_user.get('is_admin'):
+        return jsonify({'error': 'Unauthorized'}), 403
+    try:
+        result = plugins_collection.delete_one({'id': plugin_id})
+        if result.deleted_count > 0:
+            return jsonify({'message': 'Plugin deleted successfully'})
+        else:
+            return jsonify({'error': 'Plugin not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Admin setup route (one-time use)
 @app.route('/api/setup-admin', methods=['POST'])
 def setup_admin():
